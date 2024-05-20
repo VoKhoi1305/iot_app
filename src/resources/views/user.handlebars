@@ -1,0 +1,32 @@
+
+<div class="container">
+    <div class="box info-box">
+        <span id="text" class="material-symbols-outlined">
+    device_thermostat
+        </span>
+    </div>
+
+    <div class="box warning-box">
+       <span class="material-symbols-outlined" style ="font-size: 2cm"> device_thermostat</span>
+        <p>Đây là cảnh báo quan trọng.</p>
+    </div>
+
+    <div class="box error-box">
+        <h2>Lỗi</h2>
+        <p>Đã xảy ra lỗi trong quá trình xử lý.</p>
+    </div>
+</div>
+
+  <script>
+  const textElement = document.getElementById('text');
+  function changeText() {
+    let date = new Date();
+    let hours = date.getHours();
+    if (hours > 12) {
+      textElement.textContent = 'co2';
+    } else {
+        textElement.textContent = 'device_thermostat';
+    }
+}
+  changeText();
+  </script>
