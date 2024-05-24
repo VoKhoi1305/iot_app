@@ -16,15 +16,15 @@ const session = require('express-session');
 
 // cau hinh path  
 app.use(express.static(path.join(__dirname,'public')));
-
+  
 // Cấu hình handlebars
 app.engine('handlebars', engine());
 app.set('view engine', 'handlebars');   
-app.set('views',path.join(__dirname,'resources/views'));
+app.set('views',path.join(__dirname,'resources/views/'));
 // Sử dụng body-parser 
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(bodyParser.json());
-
+app.use(express.static(path.join(__dirname, 'public')));
 // firebase config
 const firebaseConfig = {
     apiKey: "AIzaSyCL16RRuc7ZGW_NSoTGGTih9W6D1_OOi2E",

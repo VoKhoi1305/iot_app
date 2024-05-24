@@ -1,5 +1,6 @@
 const { initializeApp } = require('firebase/app');
 const { getFirestore, collection, getDocs, addDoc, query, where,onSnapshot,orderBy,limit} = require('firebase/firestore');
+
 const firebaseConfig = {
     apiKey: "AIzaSyCL16RRuc7ZGW_NSoTGGTih9W6D1_OOi2E",
     authDomain: "iot-chale.firebaseapp.com",
@@ -54,16 +55,31 @@ class LoginController{
            checklogin();
     }
 
-    renderuser(req,res){
-        const username = req.session.username;
-        res.render('user',{note: username});
+    renderuser(req, res) {
+        res.render('map', { title: 'Map' });
+    }
+    
+    async getFirebaseData(req, res) {
+        try {
+            const snapshot = await getDocs(environmentRef);
+            const data = snapshot.docs.map(doc => doc.data());
+            console.log(data);
+            res.json(data); 
+        } 
+        catch (error) {
+            console.error('Error getting Firebase data:', error);
+            res.status(500).json({ error: 'Error getting Firebase data' });
+        }
     }
 
-    renderadmin(req,res){
-        const username = req.session.username;
-        res.render('admin');
+
+    renderadmin(req, res) {
+        res.render('map', { title: 'Map' })
     }
+
+   
 
 }
+
 
 module.exports = new LoginController;

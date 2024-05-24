@@ -1,0 +1,55 @@
+
+
+<div id="mapContainer" style="width: 100%; height: 600px;"></div>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+<script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+<link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css">
+<script>var platform = new H.service.Platform({
+    'apikey': '_6mrku4OzHFiet0E9I6OChX8MzQ5YtFRf93SeSKScKA' 
+    });
+
+    const defaultLayers = platform.createDefaultLayers();
+    const map = new H.Map(
+        document.getElementById('mapContainer'),
+        defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: { lat: 56.97, lng: 24.09 },
+            padding: { top: 50, right: 50, bottom: 50, left: 50 }
+        });
+
+   fetch('/login/getFirebaseData')
+        .then(response => response.json())
+        .then(data => {
+            data.forEach(location => {
+                const marker = new H.map.Marker(
+                    { lat: location.lat, lng: location.lng },
+                    //{ icon: pngIcon}
+                );  
+                marker.setData(location.info + '<br>' + location.info1); // Combine info and info1
+                marker.addEventListener('pointerenter', function (evt) {
+                    const bubble = new H.ui.InfoBubble(evt.target.getGeometry(), {
+                        content: evt.target.getData()
+                    });
+                    ui.addBubble(bubble);
+                    marker.bubble = bubble; // Store the bubble in the marker for easy access
+                });
+                marker.addEventListener('pointerleave', function (evt) {
+                    if (marker.bubble) {
+                        ui.removeBubble(marker.bubble); // Remove the bubble when the mouse leaves the marker
+                        marker.bubble = null;
+                    }
+                });
+                map.addObject(marker);
+            });
+        })
+        .catch(error => {
+            console.error('Error fetching Firebase data:', error);
+        }); 
+
+    const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+    const ui = H.ui.UI.createDefault(map, defaultLayers);</script>
+
+
+    
