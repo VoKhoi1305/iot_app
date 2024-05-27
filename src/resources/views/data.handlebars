@@ -1,1 +1,38 @@
- <div id="mapContainer" style="width: 100%; height: 400px;"></div>
+
+   <div id="notification-icon">
+    <span class="material-symbols-outlined" style="font-size: 50px">notifications</span>
+</div>
+<div id="notifications">
+    <div class="notification-header">Notifications</div>
+ </div>
+
+
+
+<script>
+ document.getElementById('notification-icon').addEventListener('click', async () => {
+      const notificationsDiv = document.getElementById('notifications');
+
+      if (notificationsDiv.style.display === 'none') {
+        notificationsDiv.style.display = 'block';
+        try {
+
+          const response = await fetch('/login/getFirebaseData');
+          const notifications = await response.json();
+          const filteredNotifications = notifications.filter(notification => notification.info > 80);
+          notificationsDiv.innerHTML = filteredNotifications.map(notification => `
+            <div>
+              <p><strong>${notification.info}</strong></p>
+              <p>${notification.info1}</p>
+            </div>
+          `).join('');
+        } catch (error) {
+          notificationsDiv.innerHTML = `<p>Error loading notifications: ${error}</p>`;
+        }
+      } else {
+        notificationsDiv.style.display = 'none';
+      }
+    });
+
+
+
+  </script>

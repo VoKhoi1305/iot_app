@@ -27,8 +27,9 @@ class LoginController{
         res.render('dangnhap');
     }
     check(req, res){
-        const inputusername = req.body.username;
+            const inputusername = req.body.username;
             const inputpassword = req.body.password;
+         
             const q = query(accountRef,where("username", "==",inputusername),where("password","==",inputpassword));
             async function checklogin(){
             const accounts = await getDocs(q);
@@ -63,7 +64,6 @@ class LoginController{
         try {
             const snapshot = await getDocs(environmentRef);
             const data = snapshot.docs.map(doc => doc.data());
-            console.log(data);
             res.json(data); 
         } 
         catch (error) {
@@ -73,11 +73,16 @@ class LoginController{
     }
 
 
+
     renderadmin(req, res) {
-        res.render('map', { title: 'Map' })
+        res.render('data');
     }
 
-   
+    async submitSmellyBin(req, res) {
+        const selectedBinId = req.body.trashBin;
+        console.log(selectedBinId)
+        res.redirect('/login/user');
+    }
 
 }
 
