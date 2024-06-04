@@ -33,10 +33,19 @@
         .then(response => response.json())
         .then(data => {
             data.forEach(location => {
+                let iconUrl = '/image/green1.png'; // Đảm bảo đường dẫn icon đúng
+                        if (location.info > 50) {
+                            iconUrl = '/image/yellow1.png';
+                        }
+                        if (location.info > 80) {
+                            iconUrl = '/image/red1.png';
+                        }
                 const marker = new H.map.Marker(
                     { lat: location.lat, lng: location.lng },
+                    {  icon: new H.map.Icon(iconUrl)}
                 );  
                 marker.setData(location.info + '<br>' + location.info1); // Combine info and info1
+              
                 marker.addEventListener('pointerenter', function (evt) {
                     const bubble = new H.ui.InfoBubble(evt.target.getGeometry(), {
                         content: evt.target.getData()
@@ -59,7 +68,15 @@
         }); 
 
     const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
-    const ui = H.ui.UI.createDefault(map, defaultLayers);</script>
+    const ui = H.ui.UI.createDefault(map, defaultLayers);
+    const zoomRectangle = new H.ui.ZoomRectangle({
+    // Position the control on the map's viewport
+    alignment: H.ui.LayoutAlignment.RIGHT_BOTTOM
+});
+ui.addControl('rectangle', zoomRectangle);
+    
+    
+    </script>
 
 
     
