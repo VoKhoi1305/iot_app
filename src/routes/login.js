@@ -4,12 +4,11 @@ const loginController = require('../app/controllers/LoginController');
 const requireLogin = require('../app/middleware/requirelogin');
 
 
-router.get('/user',requireLogin,loginController.renderuser);
-router.get('/admin',requireLogin,loginController.renderadmin);
+router.get('/user', requireLogin, loginController.renderuser);
+router.get('/admin', requireLogin, loginController.renderadmin);
 router.get('/getFirebaseData', loginController.getFirebaseData);
-router.post('/submit-smelly-bin', loginController.submitSmellyBin);
-router.get('/',loginController.index);
-router.post('/',loginController.check);
-
+router.post('/updateLights', loginController.updateLights);
+router.get('/', loginController.index);
+router.post('/', loginController.check);
 
 module.exports = router;

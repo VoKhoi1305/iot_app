@@ -1,82 +1,188 @@
+<div id="mapContainer" style="width: 100%; height: 660px; position: relative;">
+    <div id="searchContainer"
+        style="position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+        <input type="text" id="searchInput" placeholder="Search for trash bin or street" style="margin-right: 10px;"
+            class="awesomplete">
+        <button id="searchButton">Search</button>
+    </div>
+</div>
 
-
-<div id="mapContainer" style="width: 100%; height: 600px;"></div>
-
-<form id="trashBinForm" method="POST" action="/login/submit-smelly-bin">
-        <h3>Select Smelly Trash Bin</h3>
-        <select id="trashBinSelect" name="trashBin">
-            <option value="trash1">Trash1</option>
-            <option value="trash2">Trash2</option>
-            <option value="trash3">Trash3</option>
-        </select>
-        <button type="submit">Submit</button>
-    </form>
 <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
 <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
 <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
 <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
 <link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css">
-<script>var platform = new H.service.Platform({
-    'apikey': '_6mrku4OzHFiet0E9I6OChX8MzQ5YtFRf93SeSKScKA' 
+<script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css">
+
+<script>
+    var platform = new H.service.Platform({
+        'apikey': '_6mrku4OzHFiet0E9I6OChX8MzQ5YtFRf93SeSKScKA'
     });
 
     const defaultLayers = platform.createDefaultLayers();
     const map = new H.Map(
         document.getElementById('mapContainer'),
         defaultLayers.vector.normal.map, {
-            zoom: 10,
-            center: { lat: 56.97, lng: 24.09 },
-            padding: { top: 50, right: 50, bottom: 50, left: 50 }
-        });
-
-   fetch('/login/getFirebaseData')
-        .then(response => response.json())
-        .then(data => {
-            data.forEach(location => {
-                let iconUrl = '/image/green1.png'; // Đảm bảo đường dẫn icon đúng
-                        if (location.info > 50) {
-                            iconUrl = '/image/yellow1.png';
-                        }
-                        if (location.info > 80) {
-                            iconUrl = '/image/red1.png';
-                        }
-                const marker = new H.map.Marker(
-                    { lat: location.lat, lng: location.lng },
-                    {  icon: new H.map.Icon(iconUrl)}
-                );  
-                marker.setData(location.info + '<br>' + location.info1); // Combine info and info1
-              
-                marker.addEventListener('pointerenter', function (evt) {
-                    const bubble = new H.ui.InfoBubble(evt.target.getGeometry(), {
-                        content: evt.target.getData()
-                    });
-                    ui.addBubble(bubble);
-                    marker.bubble = bubble; // Store the bubble in the marker for easy access
-                });
-                marker.addEventListener('pointerleave', function (evt) {
-                    if (marker.bubble) {
-                        ui.removeBubble(marker.bubble); // Remove the bubble when the mouse leaves the marker
-                        marker.bubble = null;
-                    }
-                });
-                map.addObject(marker);
-
-            });
-        })
-        .catch(error => {
-            console.error('Error fetching Firebase data:', error);
-        }); 
+        zoom: 10,
+        center: { lat: 21.00, lng: 105.8 },
+        padding: { top: 50, right: 50, bottom: 50, left: 50 }
+    });
 
     const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
     const ui = H.ui.UI.createDefault(map, defaultLayers);
+
     const zoomRectangle = new H.ui.ZoomRectangle({
-    // Position the control on the map's viewport
-    alignment: H.ui.LayoutAlignment.RIGHT_BOTTOM
-});
-ui.addControl('rectangle', zoomRectangle);
-    
-    
-    </script>
+        alignment: H.ui.LayoutAlignment.RIGHT_BOTTOM
+    });
+    ui.addControl('rectangle', zoomRectangle);
+
+    function getdata() {
+        fetch('/login/getFirebaseData')
+            .then(response => response.json())
+            .then(data => {
+                Object.keys(data).forEach(key => {
+                    const location = data[key];
+
+                    let iconUrl = '/image/green1.png';
+                    if (location.full > 50) {
+                        iconUrl = '/image/yellow1.png';
+                    }
+                    if (location.full > 80) {
+                        iconUrl = '/image/red1.png';
+                    }
+
+                    const marker = new H.map.Marker(
+                        { lat: location.lat, lng: location.lng },
+                        { icon: new H.map.Icon(iconUrl) }
+                    );
+                    const maxCm = 12;
+                    const maxHeightPx = 60;
+                    const heightPx = (location.full / maxCm) * maxHeightPx;
+                    let barColor = '#4CAF50'; // Màu xanh lá cây cho chiều cao <= 36px
+                    if (heightPx > 36) {
+                        barColor = '#FFD700'; // Màu vàng cho chiều cao > 36px
+                    }
+                    if (heightPx > 48) {
+                        barColor = '#FF4500'; // Màu đỏ cho chiều cao > 48px
+                    }
+                    const batteryColor = location.battery > 40 ? 'green' : location.battery > 20 ? 'yellow' : 'red';
+                    const batteryWidth = Math.min(location.battery, 100);
+                    const markerInfo = `
+        <table style="border-collapse: collapse; width: 100%; margin-top: 10px;">
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px; vertical-align: top;">
+                    <div style="display: flex; align-items: center;">
+                        <span>${location.full} cm</span>
+                        <div style="height: 60px; width: 10px; background-color: #ddd; margin-left: 5px; position: relative;">
+                            <div style="height: ${heightPx}px; width: 100%; background-color: ${barColor}; position: absolute; bottom: 0;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-location-dot"></i> ${location.lat}, ${location.lng}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-temperature-three-quarters"></i> ${location.temp}°C
+                </td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-droplet"></i> ${location.humid}%
+                </td>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-smog"></i> ${location.smell}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-weight-scale"></i> ${location.weight} kg
+                </td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px;" colspan="3">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fa-solid fa-battery-half" style="margin-right: 5px;"></i> ${location.battery}%
+                        <div style="flex-grow: 1; height: 10px; background-color: #ddd; margin-left: 10px; position: relative;">
+                            <div style="width: ${batteryWidth}%; height: 100%; background-color: ${batteryColor}; position: absolute; left: 0;"></div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px;" colspan="3">
+                    <i class="fa-solid fa-sun"></i> ${location.uv} UV
+                </td>
+            </tr>
+        </table>`;
 
 
-    
+                    marker.setData(markerInfo);
+
+                    marker.addEventListener('pointerenter', function (evt) {
+                        const bubble = new H.ui.InfoBubble(evt.target.getGeometry(), {
+                            content: evt.target.getData()
+                        });
+                        ui.addBubble(bubble);
+                        marker.bubble = bubble;
+                    });
+
+                    marker.addEventListener('pointerleave', function (evt) {
+                        if (marker.bubble) {
+                            ui.removeBubble(marker.bubble);
+                            marker.bubble = null;
+                        }
+                    });
+
+                    map.addObject(marker);
+                });
+
+                // Thiết lập gợi ý tự động điền cho Awesomplete
+                var input = document.getElementById("searchInput");
+                new Awesomplete(input, {
+                    list: Object.keys(data)
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching Firebase data:', error);
+            });
+    }
+    getdata();
+    //setInterval(getdata, 6000);
+
+    document.getElementById('searchButton').addEventListener('click', function () {
+        const query = document.getElementById('searchInput').value;
+
+        // Tìm kiếm tên thùng rác
+        fetch('/login/getFirebaseData')
+            .then(response => response.json())
+            .then(data => {
+                const location = data[query];
+                if (location) {
+                    map.getViewModel().setLookAtData({
+                        position: { lat: location.lat, lng: location.lng },
+                        zoom: 30
+                    }, true);
+                    return;
+                }
+
+                // Nếu không tìm thấy tên thùng rác, tìm kiếm địa chỉ
+                const geocoder = platform.getGeocodingService();
+                geocoder.geocode({ searchText: query }, function (result) {
+                    if (result.Response.View.length > 0) {
+                        const location = result.Response.View[0].Result[0].Location.DisplayPosition;
+                        map.getViewModel().setLookAtData({
+                            position: { lat: location.Latitude, lng: location.Longitude },
+                            zoom: 30
+                        }, true);
+                    } else {
+                        alert('No results found for the entered search query.');
+                    }
+                }, function (error) {
+                    console.error('Geocoding error:', error);
+                });
+            })
+            .catch(error => {
+                console.error('Error fetching Firebase data:', error);
+            });
+    });
+
+</script>

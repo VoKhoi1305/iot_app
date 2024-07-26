@@ -1,60 +1,58 @@
 const express = require('express');
-const {engine} = require('express-handlebars');
+const { engine } = require('express-handlebars');
 const path = require('path');
 const bodyParser = require('body-parser');
-const app = express();
-const { initializeApp } = require('firebase/app');
-const { getFirestore, collection, getDocs, addDoc, query, where,onSnapshot,orderBy,limit} = require('firebase/firestore');
-const { timeStamp } = require('console');
+const app1 = express();
+const { initializeApp, getApps } = require('firebase/app');
+const { getFirestore, collection, getDocs, addDoc, query, where, onSnapshot, orderBy, limit } = require('firebase/firestore');
 const route = require('./routes');
 const session = require('express-session');
- app.use(session({
-   secret: 'secret_key',
-   resave: false,
-   saveUninitialized: true
- }));
+const { getDatabase, ref, onValue } = require('firebase/database');
+app1.use(session({
+  secret: 'secret_key',
+  resave: false,
+  saveUninitialized: true
+}));
 
 // cau hinh path  
-app.use(express.static(path.join(__dirname,'public')));
-  
+app1.use(express.static(path.join(__dirname, 'public')));
+
 // Cấu hình handlebars
-app.engine('handlebars', engine());
-app.set('view engine', 'handlebars');   
-app.set('views',path.join(__dirname,'resources/views/'));
+app1.engine('handlebars', engine());
+app1.set('view engine', 'handlebars');
+app1.set('views', path.join(__dirname, 'resources/views/'));
 // Sử dụng body-parser 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.json());
-app.use(express.static(path.join(__dirname, 'public')));
+app1.use(bodyParser.urlencoded({ extended: true }));
+app1.use(bodyParser.json());
+app1.use(express.static(path.join(__dirname, 'public')));
 // firebase config
 const firebaseConfig = {
-    apiKey: "AIzaSyCL16RRuc7ZGW_NSoTGGTih9W6D1_OOi2E",
-    authDomain: "iot-chale.firebaseapp.com",
-    projectId: "iot-chale",
-    storageBucket: "iot-chale.appspot.com",
-    messagingSenderId: "287483640732",
-    appId: "1:287483640732:web:790450abf9ae3bc4506659",
-    measurementId: "G-HQPMEGH366"
-  };
+  apiKey: "AIzaSyCL16RRuc7ZGW_NSoTGGTih9W6D1_OOi2E",
+  authDomain: "iot-chale.firebaseapp.com",
+  projectId: "iot-chale",
+  databaseURL: "https://iot-chale-default-rtdb.asia-southeast1.firebasedatabase.app/",
+  storageBucket: "iot-chale.appspot.com",
+  messagingSenderId: "287483640732",
+  appId: "1:287483640732:web:790450abf9ae3bc4506659",
+  measurementId: "G-HQPMEGH366"
+};
 
-  const firebaseapp = initializeApp(firebaseConfig);
-  const db = getFirestore(firebaseapp);
-  const accountRef = collection(db, "account");
-  const environmentRef = collection(db, "environment");
+let firebaseapp;
+if (!getApps().length) {
+  firebaseapp = initializeApp(firebaseConfig);
+} else {
+  firabaseapp = getApps()[0];
+}
 
-  route(app)
+const database = getDatabase(firebaseapp);
+const db = getFirestore(firebaseapp);
+const accountRef = collection(db, "account");
 
-  
-// const queryenvi = query(environmentRef,limit(1))
-// const environments = onSnapshot(queryenvi, (snapshot)=>{
-//   snapshot.docChanges().forEach((change) => {
-//     if(change.type === 'added'){
-//       const newdata = change.doc.get('temp')
-//       console.log(newdata);
-//     }
-//   })
-// });
+
+route(app1)
+
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+app1.listen(PORT, () => {
+  console.log(`Server is running on port ${PORT}`);
 });

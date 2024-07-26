@@ -1,38 +1,378 @@
-
-   <div id="notification-icon">
-    <span class="material-symbols-outlined" style="font-size: 50px">notifications</span>
-</div>
-<div id="notifications">
-    <div class="notification-header">Notifications</div>
- </div>
-
-
-
-<script>
- document.getElementById('notification-icon').addEventListener('click', async () => {
-      const notificationsDiv = document.getElementById('notifications');
-
-      if (notificationsDiv.style.display === 'none') {
-        notificationsDiv.style.display = 'block';
-        try {
-
-          const response = await fetch('/login/getFirebaseData');
-          const notifications = await response.json();
-          const filteredNotifications = notifications.filter(notification => notification.info > 80);
-          notificationsDiv.innerHTML = filteredNotifications.map(notification => `
-            <div>
-              <p><strong>${notification.info}</strong></p>
-              <p>${notification.info1}</p>
-            </div>
-          `).join('');
-        } catch (error) {
-          notificationsDiv.innerHTML = `<p>Error loading notifications: ${error}</p>`;
+<head>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
         }
-      } else {
-        notificationsDiv.style.display = 'none';
-      }
-    });
+
+        .container {
+            display: flex;
+        }
+
+        .notification {
+            background-color: #f44336;
+            /* Red */
+            color: white;
+            margin: 10px 0;
+            padding: 15px;
+            border: 1px solid #f44336;
+        }
+
+        .notification .closebtn {
+            margin-left: 15px;
+            color: white;
+            font-weight: bold;
+            float: right;
+            font-size: 22px;
+            line-height: 20px;
+            cursor: pointer;
+            transition: 0.3s;
+        }
+
+        .notification .closebtn:hover {
+            color: black;
+        }
+
+        .high-full {
+            background-color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="mapContainer" style="width: 100%; height: 660px; position: relative;">
+        <div id="searchContainer"
+            style="position: absolute; top: 10px; left: 10px; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.3); z-index: 10;">
+            <input type="text" id="searchInput" placeholder="Search for trash bin or street" style="margin-right: 10px;"
+                class="awesomplete">
+            <button id="searchButton">Search</button>
+        </div>
+    </div>
+    <div class="container">
+        <div id="statsContainer">
+            <h2>Trash Bin Statistics</h2>
+            <table id="statsTable">
+                <thead>
+                    <tr>
+                        <th>Trash Bin</th>
+                        <th>Latitude</th>
+                        <th>Longitude</th>
+                        <th>Fullness (%)</th>
+                        <th>Temperature (°C)</th>
+                        <th>Weight (kg)</th>
+                        <th>Humidity</th>
+                        <th>Smell</th>
+                        <th>Battery</th>
+                        <th>UV</th>
+                        <th>Light Control</th> <!-- Thêm cột điều khiển đèn -->
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data will be dynamically inserted here -->
+                </tbody>
+            </table>
+        </div>
+        <div id="notificationContainer">
+            <!-- Notifications will be dynamically inserted here -->
+        </div>
+    </div>
+    <div id="chartContainer">
+        <canvas id="myChart" class="chart-canvas"></canvas>
+    </div>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-core.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-service.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-mapevents.js"></script>
+    <script src="https://js.api.here.com/v3/3.1/mapsjs-ui.js"></script>
+    <link rel="stylesheet" href="https://js.api.here.com/v3/3.1/mapsjs-ui.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/awesomplete/1.1.5/awesomplete.min.css">
+    <script>
+
+        var platform = new H.service.Platform({
+            'apikey': '_6mrku4OzHFiet0E9I6OChX8MzQ5YtFRf93SeSKScKA'
+        });
+
+        const defaultLayers = platform.createDefaultLayers();
+        const map = new H.Map(
+            document.getElementById('mapContainer'),
+            defaultLayers.vector.normal.map, {
+            zoom: 10,
+            center: { lat: 21.00, lng: 105.8 },
+            padding: { top: 50, right: 50, bottom: 50, left: 50 }
+        });
+
+        const behavior = new H.mapevents.Behavior(new H.mapevents.MapEvents(map));
+        const ui = H.ui.UI.createDefault(map, defaultLayers);
+
+        const zoomRectangle = new H.ui.ZoomRectangle({
+            alignment: H.ui.LayoutAlignment.RIGHT_BOTTOM
+        });
+        ui.addControl('rectangle', zoomRectangle);
+        function fetchData() {
+            fetch('/login/getFirebaseData')
+                .then(response => response.json())
+                .then(data => {
+                    Object.keys(data).forEach(key => {
+                        const location = data[key];
+
+                        let iconUrl = '/image/green1.png';
+                        if (location.full > 50) {
+                            iconUrl = '/image/yellow1.png';
+                        }
+                        if (location.full > 80) {
+                            iconUrl = '/image/red1.png';
+                        }
+
+                        const marker = new H.map.Marker(
+                            { lat: location.lat, lng: location.lng },
+                            { icon: new H.map.Icon(iconUrl) }
+                        );
+                        const maxCm = 12;
+                        const maxHeightPx = 60;
+                        const heightPx = (location.full / maxCm) * maxHeightPx;
+                        let barColor = '#4CAF50'; // Màu xanh lá cây cho chiều cao <= 36px
+                        if (heightPx > 36) {
+                            barColor = '#FFD700'; // Màu vàng cho chiều cao > 36px
+                        }
+                        if (heightPx > 48) {
+                            barColor = '#FF4500'; // Màu đỏ cho chiều cao > 48px
+                        }
+                        const batteryColor = location.battery > 40 ? 'green' : location.battery > 20 ? 'yellow' : 'red';
+                        const batteryWidth = Math.min(location.battery, 100);
+
+                        const lightStatus = location.light ? 'Light On' : 'Light Off';
+                        const lightColor = location.light ? 'green' : 'red';
+                        const markerInfo = `
+        <table style="border-collapse: collapse; width: 100%; margin-top: 10px;">
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px; vertical-align: top;">
+                    <div style="display: flex; align-items: center;">
+                        <span>${location.full} cm</span>
+                        <div style="height: 60px; width: 10px; background-color: #ddd; margin-left: 5px; position: relative;">
+                            <div style="height: ${heightPx}px; width: 100%; background-color: ${barColor}; position: absolute; bottom: 0;"></div>
+                        </div>
+                    </div>
+                </td>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-location-dot"></i> ${location.lat}, ${location.lng}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-temperature-three-quarters"></i> ${location.temp}°C
+                </td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-droplet"></i> ${location.humid}%
+                </td>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-smog"></i> ${location.smell}
+                </td>
+                <td style="border: 1px solid #ddd; padding: 7px;">
+                    <i class="fa-solid fa-weight-scale"></i> ${location.weight} kg
+                </td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px;" colspan="3">
+                    <div style="display: flex; align-items: center;">
+                        <i class="fa-solid fa-battery-half" style="margin-right: 5px;"></i> ${location.battery}%
+                        <div style="flex-grow: 1; height: 10px; background-color: #ddd; margin-left: 10px; position: relative;">
+                            <div style="width: ${batteryWidth}%; height: 100%; background-color: ${batteryColor}; position: absolute; left: 0;"></div>
+                        </div>
+                    </div>
+                </td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px;" colspan="3">
+                    <i class="fa-solid fa-sun"></i> ${location.uv} UV
+                </td>
+            </tr>
+            <tr>
+                <td style="border: 1px solid #ddd; padding: 7px; color: ${lightColor};" colspan="3">
+                    <i class="fa-solid fa-lightbulb"></i> ${lightStatus}
+                </td>
+            </tr>
+        </table>`;
 
 
+                        marker.setData(markerInfo);
 
-  </script>
+                        marker.addEventListener('pointerenter', function (evt) {
+                            const bubble = new H.ui.InfoBubble(evt.target.getGeometry(), {
+                                content: evt.target.getData()
+                            });
+                            ui.addBubble(bubble);
+                            marker.bubble = bubble;
+                        });
+
+                        marker.addEventListener('pointerleave', function (evt) {
+                            if (marker.bubble) {
+                                ui.removeBubble(marker.bubble);
+                                marker.bubble = null;
+                            }
+                        });
+
+                        map.addObject(marker);
+                    });
+
+                    // Thiết lập gợi ý tự động điền cho Awesomplete
+                    var input = document.getElementById("searchInput");
+                    new Awesomplete(input, {
+                        list: Object.keys(data)
+                    });
+                    const tableBody = document.getElementById('statsTable').getElementsByTagName('tbody')[0];
+                    tableBody.innerHTML = '';
+
+                    const notificationContainer = document.getElementById('notificationContainer');
+                    notificationContainer.innerHTML = '';
+
+                    const fullnessData = []; // Mảng để lưu giá trị location.full
+                    const labels = []; // Mảng để lưu tên của các thùng rác
+
+                    Object.keys(data).forEach(key => {
+                        const location = data[key];
+                        const row = tableBody.insertRow();
+
+                        row.insertCell(0).innerText = key;
+                        row.insertCell(1).innerText = location.lat;
+                        row.insertCell(2).innerText = location.lng;
+                        const fullnessCell = row.insertCell(3);
+                        fullnessCell.innerText = location.full;
+                        row.insertCell(4).innerText = location.temp;
+                        row.insertCell(5).innerText = location.weight;
+                        row.insertCell(6).innerText = location.humid;
+                        const smellCell = row.insertCell(7);
+                        if (location.smell == 1) {
+                            smellCell.innerText = "yes";
+                        } else {
+                            smellCell.innerText = "no";
+                        }
+                        const batteryCell = row.insertCell(8);
+                        batteryCell.innerText = location.battery
+                        const uvCell = row.insertCell(9);
+                        uvCell.innerText = location.uv;
+                        // Thêm cột điều khiển đèn
+                        const lightControlCell = row.insertCell(10);
+                        const lightControlButton = document.createElement('button');
+                        lightControlButton.textContent = location.light ? 'Turn Off' : 'Turn On';
+                        lightControlButton.onclick = () => toggleLight(key, !location.light);
+                        lightControlCell.appendChild(lightControlButton);
+
+                        // Thêm dữ liệu vào mảng
+                        fullnessData.push(location.full);
+                        labels.push(key);
+
+                        if (location.full > 80) {
+                            fullnessCell.classList.add('high-full');
+                            const notification = document.createElement('div');
+                            notification.className = 'notification';
+                            notification.innerHTML = `Trash bin <strong>${key}</strong> is more than 80% full!<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>`;
+                            notificationContainer.appendChild(notification);
+                        }
+
+                        if (location.smell == '1') {
+                            smellCell.classList.add('high-full');
+                            const notification = document.createElement('div');
+                            notification.className = 'notification';
+                            notification.innerHTML = `Trash bin <strong>${key}</strong> is smelly!<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>`;
+                            notificationContainer.appendChild(notification);
+                        }
+                    });
+
+                    // Vẽ đồ thị sau khi lấy được dữ liệu
+                    drawChart(labels, fullnessData);
+                })
+                .catch(error => {
+                    console.error('Error fetching Firebase data:', error);
+                });
+        }
+
+        // Hàm vẽ đồ thị bằng Chart.js
+        function drawChart(labels, data) {
+            const ctx = document.getElementById('myChart').getContext('2d');
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: 'Fullness of Trash Bins',
+                        data: data,
+                        backgroundColor: 'rgba(75, 192, 192, 0.2)',
+                        borderColor: 'rgba(75, 192, 192, 1)',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        function toggleLight(binId, newStatus) {
+            fetch('/login/updateLights', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ binId, light: newStatus })
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        // Refresh data to update the button text
+                        fetchData();
+                    } else {
+                        console.error('Failed to update light control');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+        }
+
+        // Fetch data initially and set interval for updates
+        fetchData();
+        setInterval(fetchData, 60000); // Update every 60 seconds
+        document.getElementById('searchButton').addEventListener('click', function () {
+            const query = document.getElementById('searchInput').value;
+
+            // Tìm kiếm tên thùng rác
+            fetch('/login/getFirebaseData')
+                .then(response => response.json())
+                .then(data => {
+                    const location = data[query];
+                    if (location) {
+                        map.getViewModel().setLookAtData({
+                            position: { lat: location.lat, lng: location.lng },
+                            zoom: 30
+                        }, true);
+                        return;
+                    }
+
+                    // Nếu không tìm thấy tên thùng rác, tìm kiếm địa chỉ
+                    const geocoder = platform.getGeocodingService();
+                    geocoder.geocode({ searchText: query }, function (result) {
+                        if (result.Response.View.length > 0) {
+                            const location = result.Response.View[0].Result[0].Location.DisplayPosition;
+                            map.getViewModel().setLookAtData({
+                                position: { lat: location.Latitude, lng: location.Longitude },
+                                zoom: 30
+                            }, true);
+                        } else {
+                            alert('No results found for the entered search query.');
+                        }
+                    }, function (error) {
+                        console.error('Geocoding error:', error);
+                    });
+                })
+                .catch(error => {
+                    console.error('Error fetching Firebase data:', error);
+                });
+        });
+
+    </script>
+
+</body>
