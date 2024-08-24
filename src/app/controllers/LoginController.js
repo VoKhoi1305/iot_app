@@ -64,7 +64,7 @@ class LoginController {
     async getFirebaseData(req, res) {
         const dbRef = ref(realtimedatabase);
         try {
-            const snapshot = await get(child(dbRef, 'trash'));
+            const snapshot = await get(child(dbRef, 'trash/'));
             if (snapshot.exists()) {
                 let data = snapshot.val();
 
@@ -77,9 +77,13 @@ class LoginController {
                                 if (typeof obj[key] === 'number') {
                                     if (key === 'lat' || key === 'lng') {
                                         obj[key] = (obj[key] / 1000000).toFixed(6);
-                                    } else {
-                                        obj[key] = (obj[key] / 100).toFixed(2);
+                                    } else if (key === 'full') {
+                                        obj[key] = (obj[key] / 10000).toFixed(2);
                                     }
+                                else
+                                    {
+                                        obj[key] = (obj[key] / 1000).toFixed(2);
+                                    } 
                                 } else if (typeof obj[key] === 'object') {
                                     formatValues(obj[key]);
                                 }
@@ -116,7 +120,7 @@ class LoginController {
     async updateLights(req, res) {
         const { binId, light } = req.body;
         const updates = {};
-        updates[`trash/${binId}/light`] = light;
+        updates[`trash/${binId}/static/light`] = light;
 
         try {
             await update(ref(realtimedatabase), updates);

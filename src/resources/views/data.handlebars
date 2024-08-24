@@ -63,11 +63,10 @@
                         <th>Humidity</th>
                         <th>Smell</th>
                         <th>Battery</th>
-                        <th>UV</th>
-                        <th>Light Control</th> <!-- Thêm cột điều khiển đèn -->
+                        {{!-- <th>Light Control</th> <!-- Thêm cột điều khiển đèn --> --}}
                     </tr>
                 </thead>
-                <tbody>
+                <tbody id="tableBody">
                     <!-- Data will be dynamically inserted here -->
                 </tbody>
             </table>
@@ -114,22 +113,22 @@
                 .then(data => {
                     Object.keys(data).forEach(key => {
                         const location = data[key];
-
+                    
                         let iconUrl = '/image/green1.png';
-                        if (location.full > 50) {
+                        if (location.dynamic.full > 10) {
                             iconUrl = '/image/yellow1.png';
                         }
-                        if (location.full > 80) {
+                        if (location.dynamic.full > 15) {
                             iconUrl = '/image/red1.png';
                         }
 
                         const marker = new H.map.Marker(
-                            { lat: location.lat, lng: location.lng },
+                            { lat: location.static.lat, lng: location.static.lng },
                             { icon: new H.map.Icon(iconUrl) }
                         );
-                        const maxCm = 12;
+                        const maxCm = 17;
                         const maxHeightPx = 60;
-                        const heightPx = (location.full / maxCm) * maxHeightPx;
+                        const heightPx = (location.dynamic.full / maxCm) * maxHeightPx;
                         let barColor = '#4CAF50'; // Màu xanh lá cây cho chiều cao <= 36px
                         if (heightPx > 36) {
                             barColor = '#FFD700'; // Màu vàng cho chiều cao > 36px
@@ -137,60 +136,55 @@
                         if (heightPx > 48) {
                             barColor = '#FF4500'; // Màu đỏ cho chiều cao > 48px
                         }
-                        const batteryColor = location.battery > 40 ? 'green' : location.battery > 20 ? 'yellow' : 'red';
-                        const batteryWidth = Math.min(location.battery, 100);
+                        const batteryColor = location.dynamic.bat > 40 ? 'green' : location.dynamic.bat > 20 ? 'yellow' : 'red';
+                        const batteryWidth = Math.min(location.dynamic.bat, 100);
 
-                        const lightStatus = location.light ? 'Light On' : 'Light Off';
-                        const lightColor = location.light ? 'green' : 'red';
+                        const lightStatus = location.static.light ? 'Light On' : 'Light Off';
+                        const lightColor = location.static.light ? 'green' : 'red';
                         const markerInfo = `
         <table style="border-collapse: collapse; width: 100%; margin-top: 10px;">
             <tr>
                 <td style="border: 1px solid #ddd; padding: 7px; vertical-align: top;">
                     <div style="display: flex; align-items: center;">
-                        <span>${location.full} cm</span>
+                        <span>${location.dynamic.full} cm</span>
                         <div style="height: 60px; width: 10px; background-color: #ddd; margin-left: 5px; position: relative;">
                             <div style="height: ${heightPx}px; width: 100%; background-color: ${barColor}; position: absolute; bottom: 0;"></div>
                         </div>
                     </div>
                 </td>
                 <td style="border: 1px solid #ddd; padding: 7px;">
-                    <i class="fa-solid fa-location-dot"></i> ${location.lat}, ${location.lng}
+                    <i class="fa-solid fa-location-dot"></i> ${location.static.lat}, ${location.static.lng}
                 </td>
                 <td style="border: 1px solid #ddd; padding: 7px;">
-                    <i class="fa-solid fa-temperature-three-quarters"></i> ${location.temp}°C
+                    <i class="fa-solid fa-temperature-three-quarters"></i> ${location.dynamic.temp}°C
                 </td>
             </tr>
             <tr>
                 <td style="border: 1px solid #ddd; padding: 7px;">
-                    <i class="fa-solid fa-droplet"></i> ${location.humid}%
+                    <i class="fa-solid fa-droplet"></i> ${location.dynamic.humid}%
                 </td>
                 <td style="border: 1px solid #ddd; padding: 7px;">
-                    <i class="fa-solid fa-smog"></i> ${location.smell}
+                    <i class="fa-solid fa-smog"></i> ${location.dynamic.smell}
                 </td>
                 <td style="border: 1px solid #ddd; padding: 7px;">
-                    <i class="fa-solid fa-weight-scale"></i> ${location.weight} kg
+                    <i class="fa-solid fa-weight-scale"></i> ${location.dynamic.weight} kg
                 </td>
             </tr>
             <tr>
                 <td style="border: 1px solid #ddd; padding: 7px;" colspan="3">
                     <div style="display: flex; align-items: center;">
-                        <i class="fa-solid fa-battery-half" style="margin-right: 5px;"></i> ${location.battery}%
+                        <i class="fa-solid fa-battery-half" style="margin-right: 5px;"></i> ${location.dynamic.bat}
                         <div style="flex-grow: 1; height: 10px; background-color: #ddd; margin-left: 10px; position: relative;">
                             <div style="width: ${batteryWidth}%; height: 100%; background-color: ${batteryColor}; position: absolute; left: 0;"></div>
                         </div>
                     </div>
                 </td>
             </tr>
-            <tr>
-                <td style="border: 1px solid #ddd; padding: 7px;" colspan="3">
-                    <i class="fa-solid fa-sun"></i> ${location.uv} UV
-                </td>
-            </tr>
-            <tr>
+            {{!-- <tr>
                 <td style="border: 1px solid #ddd; padding: 7px; color: ${lightColor};" colspan="3">
                     <i class="fa-solid fa-lightbulb"></i> ${lightStatus}
                 </td>
-            </tr>
+            </tr> --}}
         </table>`;
 
 
@@ -219,67 +213,61 @@
                     new Awesomplete(input, {
                         list: Object.keys(data)
                     });
-                    const tableBody = document.getElementById('statsTable').getElementsByTagName('tbody')[0];
-                    tableBody.innerHTML = '';
+                     const tableBody = document.getElementById('tableBody');
+        tableBody.innerHTML = '';
 
-                    const notificationContainer = document.getElementById('notificationContainer');
-                    notificationContainer.innerHTML = '';
+        const notificationContainer = document.getElementById('notificationContainer');
+        notificationContainer.innerHTML = '';
 
-                    const fullnessData = []; // Mảng để lưu giá trị location.full
-                    const labels = []; // Mảng để lưu tên của các thùng rác
+        const fullnessData = []; // Mảng để lưu giá trị location.full
+        const labels = []; // Mảng để lưu tên của các thùng rác
 
-                    Object.keys(data).forEach(key => {
-                        const location = data[key];
-                        const row = tableBody.insertRow();
+        Object.keys(data).forEach(key => {
+            const location = data[key];
+            const row = tableBody.insertRow();
 
-                        row.insertCell(0).innerText = key;
-                        row.insertCell(1).innerText = location.lat;
-                        row.insertCell(2).innerText = location.lng;
-                        const fullnessCell = row.insertCell(3);
-                        fullnessCell.innerText = location.full;
-                        row.insertCell(4).innerText = location.temp;
-                        row.insertCell(5).innerText = location.weight;
-                        row.insertCell(6).innerText = location.humid;
-                        const smellCell = row.insertCell(7);
-                        if (location.smell == 1) {
-                            smellCell.innerText = "yes";
-                        } else {
-                            smellCell.innerText = "no";
-                        }
-                        const batteryCell = row.insertCell(8);
-                        batteryCell.innerText = location.battery
-                        const uvCell = row.insertCell(9);
-                        uvCell.innerText = location.uv;
-                        // Thêm cột điều khiển đèn
-                        const lightControlCell = row.insertCell(10);
-                        const lightControlButton = document.createElement('button');
-                        lightControlButton.textContent = location.light ? 'Turn Off' : 'Turn On';
-                        lightControlButton.onclick = () => toggleLight(key, !location.light);
-                        lightControlCell.appendChild(lightControlButton);
+            row.insertCell(0).innerText = key;
+            row.insertCell(1).innerText = location.static.lat;
+            row.insertCell(2).innerText = location.static.lng;
+            const fullnessCell = row.insertCell(3);
+            fullnessCell.innerText = location.dynamic.full;
+            row.insertCell(4).innerText = location.dynamic.temp;
+            row.insertCell(5).innerText = location.dynamic.weight;
+            row.insertCell(6).innerText = location.dynamic.humid;
+            const smellCell = row.insertCell(7);
+            const batteryper = location.dynamic.bat
+            smellCell.innerText = location.dynamic.smell;
+            const batCell = row.insertCell(8);
+            batCell.innerText = location.dynamic.bat;
+        // Thêm cột điều khiển đèn
+          //  const lightControlCell = row.insertCell(9);
+        //    const lightControlButton = document.createElement('button');
+          //  lightControlButton.textContent = location.static.light ? 'Turn Off' : 'Turn On';
+          //  lightControlButton.dataset.status = location.static.light ? 'on' : 'off';
+          //  lightControlButton.onclick = () => toggleLight(lightControlButton, key, location.static.light);
+          //  lightControlCell.appendChild(lightControlButton);
 
-                        // Thêm dữ liệu vào mảng
-                        fullnessData.push(location.full);
-                        labels.push(key);
+            // Thêm dữ liệu vào mảng
 
-                        if (location.full > 80) {
-                            fullnessCell.classList.add('high-full');
-                            const notification = document.createElement('div');
-                            notification.className = 'notification';
-                            notification.innerHTML = `Trash bin <strong>${key}</strong> is more than 80% full!<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>`;
-                            notificationContainer.appendChild(notification);
-                        }
+            if (location.dynamic.full > 15) {
+                fullnessCell.classList.add('high-full');
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.innerHTML = `Trash bin <strong>${key}</strong> is more than 80% full!<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>`;
+                notificationContainer.appendChild(notification);
+            } 
 
-                        if (location.smell == '1') {
-                            smellCell.classList.add('high-full');
-                            const notification = document.createElement('div');
-                            notification.className = 'notification';
-                            notification.innerHTML = `Trash bin <strong>${key}</strong> is smelly!<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>`;
-                            notificationContainer.appendChild(notification);
-                        }
+            if (location.dynamic.smell >= 350) {
+                smellCell.classList.add('high-full');
+                const notification = document.createElement('div');
+                notification.className = 'notification';
+                notification.innerHTML = `Trash bin <strong>${key}</strong> is smelly!<span class="closebtn" onclick="this.parentElement.style.display='none';">&times;</span>`;
+                notificationContainer.appendChild(notification);
+            }
                     });
 
                     // Vẽ đồ thị sau khi lấy được dữ liệu
-                    drawChart(labels, fullnessData);
+                  //  drawChart(labels, fullnessData);
                 })
                 .catch(error => {
                     console.error('Error fetching Firebase data:', error);
@@ -335,7 +323,7 @@
 
         // Fetch data initially and set interval for updates
         fetchData();
-        setInterval(fetchData, 60000); // Update every 60 seconds
+        setInterval(fetchData, 40000); // Update every 60 seconds
         document.getElementById('searchButton').addEventListener('click', function () {
             const query = document.getElementById('searchInput').value;
 
@@ -346,7 +334,7 @@
                     const location = data[query];
                     if (location) {
                         map.getViewModel().setLookAtData({
-                            position: { lat: location.lat, lng: location.lng },
+                            position: { lat: location.static.lat, lng: location.static.lng },
                             zoom: 30
                         }, true);
                         return;
